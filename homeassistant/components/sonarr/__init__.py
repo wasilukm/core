@@ -27,9 +27,9 @@ from .const import (
     DEFAULT_WANTED_MAX_ITEMS,
     DOMAIN,
 )
+from .coordinator import SonarrDataUpdateCoordinator
 
 PLATFORMS = ["sensor"]
-SCAN_INTERVAL = timedelta(seconds=30)
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -68,9 +68,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {
-        DATA_SONARR: sonarr,
-    }
+
+    coordinator = SonarrDataUpdateCoordinator(
+        hass,
+        sonarr=sonarr,
+        upcoming_days: entry.options[CONF_UPCOMING_DAYS],
+    )
+    hass.data[DOMAIN][entry.entry_id] = coordinator
+
+    await coordinator.async_config_entry_first_refresh()
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
