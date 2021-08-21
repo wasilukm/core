@@ -4,9 +4,10 @@ from __future__ import annotations
 from datetime import timedelta
 import logging
 
-from sonarr import Sonarr, SonarrError
+from sonarr import Sonarr, SonarrAccessRestricted, SonarrError
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 import homeassistant.util.dt as dt_util
 
@@ -46,7 +47,7 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             CONF_WANTED_MAX_ITEMS, DEFAULT_WANTED_MAX_ITEMS
         )
 
-        self.datapoints = ["app"]
+        self.datapoints = []
 
         super().__init__(
             hass,
@@ -65,9 +66,7 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         
     async def get_datapoint(self, datapoint: str):
         """Fetch datapoint from its respective endpoint."""
-        if datapoint == "app":
-            return self.sonarr.update()
-        elif datapoint == "commands":
+        if datapoint == "commands":
             return self.sonarr.commands()
         elif datapoint == "queue":
             return self.sonarr.queue()
@@ -89,6 +88,8 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
     async def _async_update_data(self) -> dict:
         """Fetch data from Sonarr."""
         try: 
+            await self.sonarr.update()
+
             data = dict(
                 zip(
                     self.datapoints,
@@ -99,5 +100,9 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             )
 
             return data
+        except SonarrAccessRestricted as err:
+            raise ConfigEntryAuthFailed(
+                "API Key is no longer valid. Please reauthenticate"
+            ) from err
         except SonarrError as error:
             raise UpdateFailed(f"Invalid response from API: {error}") from error
