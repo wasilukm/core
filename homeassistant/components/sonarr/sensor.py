@@ -35,10 +35,8 @@ async def async_setup_entry(
         SonarrDiskspaceSensor(coordinator, entry.entry_id),
         SonarrQueueSensor(coordinator, entry.entry_id),
         SonarrSeriesSensor(coordinator, entry.entry_id),
-        SonarrUpcomingSensor(coordinator, entry.entry_id, days=options[CONF_UPCOMING_DAYS]),
-        SonarrWantedSensor(
-            coordinator, entry.entry_id, max_items=options[CONF_WANTED_MAX_ITEMS]
-        ),
+        SonarrUpcomingSensor(coordinator, entry.entry_id),
+        SonarrWantedSensor(coordinator, entry.entry_id),
     ]
 
     async_add_entities(entities, True)
@@ -250,7 +248,7 @@ class SonarrSeriesSensor(SonarrSensor):
 class SonarrUpcomingSensor(SonarrSensor):
     """Defines a Sonarr Upcoming sensor."""
 
-    def __init__(self, coordinator: SonarrDataUpdateCoordinator, entry_id: str, days: int = 1) -> None:
+    def __init__(self, coordinator: SonarrDataUpdateCoordinator, entry_id: str) -> None:
         """Initialize Sonarr Upcoming sensor."""
         super().__init__(
             coordinator=coordinator,
