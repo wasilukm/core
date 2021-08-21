@@ -34,8 +34,6 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Sonarr from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
-
     if not entry.options:
         options = {
             CONF_UPCOMING_DAYS: entry.data.get(
@@ -57,16 +55,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         verify_ssl=entry.data[CONF_VERIFY_SSL],
     )
 
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-
     coordinator = SonarrDataUpdateCoordinator(
         hass,
         sonarr=sonarr,
         options=entry.options,
     )
-    hass.data[DOMAIN][entry.entry_id] = coordinator
 
     await coordinator.async_config_entry_first_refresh()
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = coordinator
+
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
