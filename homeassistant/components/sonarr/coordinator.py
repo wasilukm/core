@@ -9,6 +9,7 @@ from sonarr import Sonarr, SonarrError
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+import homeassistant.util.dt as dt_util
 
 from .const import DOMAIN
 
@@ -21,15 +22,19 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
 
     sonarr: Sonarr
     datapoints: list
+    upcoming_days: int
 
     def __init__(
         self,
         hass: HomeAssistant,
         *,
         sonarr: Sonarr,
+        upcoming_days: int = 1,
     ) -> None:
         """Initialize global Sonarr data updater."""
         self.sonarr = sonarr
+        self.upcoming_days = upcoming_days
+
         self.datapoints = ["app"]
 
         super().__init__(
@@ -54,7 +59,13 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         elif datapoint == "series":
             return self.sonarr.series()
         elif datapoint == "upcoming":
-            return self.sonarr.upcoming()
+            local = dt_util.start_of_local_day().replace(microsecond=0)
+            start = dt_util.as_utc(local)
+            end = start + timedelta(days=self.upcoming_days)
+
+            return self.sonarr.upcoming(
+                start=start.isoformat(), end=end.isoformat()
+            )
         elif datapoint == "wanted":
             return self.sonarr.wanted()
 
