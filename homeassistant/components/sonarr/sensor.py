@@ -203,10 +203,12 @@ class SonarrQueueSensor(SonarrSensor):
         return attrs
 
     @property
-    def native_value(self) -> int:
+    def native_value(self) -> int | None:
         """Return the state of the sensor."""
         if self.coordinator.data.get("queue") is not None:
             return len(self.coordinator.data["queue"])
+
+        return None
 
 
 class SonarrSeriesSensor(SonarrSensor):
