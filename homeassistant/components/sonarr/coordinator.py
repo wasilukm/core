@@ -1,16 +1,14 @@
 """Coordinator for Sonarr."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import logging
 
-from sonarr import Sonarr, SonarrAccessRestricted, SonarrError
-from sonarr.models import Application
+from sonarr import Sonarr, SonarrError
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.util.dt import utcnow
 
 from .const import DOMAIN
 
@@ -18,36 +16,21 @@ SCAN_INTERVAL = timedelta(seconds=30)
 _LOGGER = logging.getLogger(__name__)
 
 
-class SonarrDataUpdateCoordinator(DataUpdateCoordinator[Application]):
+class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
     """Class to manage fetching Sonarr data."""
 
-    last_full_update: datetime | None
     sonarr: Sonarr
+    datapoints: list
 
     def __init__(
         self,
         hass: HomeAssistant,
         *,
-        host: str,
-        port: int,
-        api_key: str,
-        base_path: str,
-        tls: bool,
-        verify_ssl: bool,
+        sonarr: Sonarr,
     ) -> None:
         """Initialize global Sonarr data updater."""
-        self.sonarr = Sonarr(
-            host=host,
-            port=port,
-            api_key=api_key,
-            base_path=base_path,
-            session=async_get_clientsession(hass),
-            tls=tls,
-            verify_ssl=verify_ssl,
-        )
-
-        self.full_update_interval = timedelta(minutes=15)
-        self.last_full_update = None
+        self.sonarr = sonarr
+        self.datapoints = ["app"]
 
         super().__init__(
             hass,
@@ -56,17 +39,38 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[Application]):
             update_interval=SCAN_INTERVAL,
         )
 
-    async def _async_update_data(self) -> Application:
+    def enable_datapoint(self, datapoint: str):
+        """Enable collection of a datapoint from its respective endpoint."""
+        self.datapoints.push(datapoint)
+
+    async def get_datapoint(self, datapoint: str):
+        """Fetch datapoint from its respective endpoint."""
+        if datapoint == "app":
+            return self.sonarr.update()
+        elif datapoint == "commands":
+            return self.sonarr.commands()
+        elif datapoint == "queue":
+            return self.sonarr.queue()
+        elif datapoint == "series":
+            return self.sonarr.series()
+        elif datapoint == "upcoming":
+            return self.sonarr.upcoming()
+        elif datapoint == "wanted":
+            return self.sonarr.wanted()
+
+        return None
+
+    async def _async_update_data(self) -> dict:
         """Fetch data from Sonarr."""
-        full_update = self.last_full_update is None or utcnow() >= (
-            self.last_full_update + self.full_update_interval
-        )
-
-        try:
-            data = await self.sonarr.update()
-
-            if full_update:
-                self.last_full_update = utcnow()
+        try: 
+            data = dict(
+                zip(
+                    self.datapoints,
+                    await asyncio.gather(
+                        *(self.get_datapoint(datapoint) for datapoint in self.datapoints),
+                    ),
+                )
+            )
 
             return data
         except SonarrError as error:
