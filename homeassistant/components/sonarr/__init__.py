@@ -22,7 +22,6 @@ from .const import (
     CONF_BASE_PATH,
     CONF_UPCOMING_DAYS,
     CONF_WANTED_MAX_ITEMS,
-    DATA_SONARR,
     DEFAULT_UPCOMING_DAYS,
     DEFAULT_WANTED_MAX_ITEMS,
     DOMAIN,
@@ -72,7 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = SonarrDataUpdateCoordinator(
         hass,
         sonarr=sonarr,
-        upcoming_days=entry.options[CONF_UPCOMING_DAYS],
+        options=entry.options,
     )
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
