@@ -10,7 +10,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 import homeassistant.util.dt as dt_util
 
-from .const import DOMAIN
+from .const import (
+    CONF_UPCOMING_DAYS,
+    CONF_WANTED_MAX_ITEMS,
+    DEFAULT_UPCOMING_DAYS,
+    DEFAULT_WANTED_MAX_ITEMS,
+    DOMAIN,
+)
 
 SCAN_INTERVAL = timedelta(seconds=30)
 _LOGGER = logging.getLogger(__name__)
@@ -22,17 +28,23 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
     sonarr: Sonarr
     datapoints: list
     upcoming_days: int
+    wanted_max_items: int
 
     def __init__(
         self,
         hass: HomeAssistant,
         *,
         sonarr: Sonarr,
-        upcoming_days: int = 1,
+        options: dict = {},
     ) -> None:
         """Initialize global Sonarr data updater."""
         self.sonarr = sonarr
-        self.upcoming_days = upcoming_days
+        self.upcoming_days = options.get(
+            CONF_UPCOMING_DAYS, DEFAULT_UPCOMING_DAYS
+        )
+        self.wanted_max_items = options.get(
+            CONF_WANTED_MAX_ITEMS, DEFAULT_WANTED_MAX_ITEMS
+        )
 
         self.datapoints = ["app"]
 
@@ -70,7 +82,7 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                 start=start.isoformat(), end=end.isoformat()
             )
         elif datapoint == "wanted":
-            return self.sonarr.wanted()
+            return self.sonarr.wanted(page_size=self.wanted_max_items)
 
         return None
 
