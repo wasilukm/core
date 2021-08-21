@@ -72,7 +72,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = SonarrDataUpdateCoordinator(
         hass,
         sonarr=sonarr,
-        upcoming_days: entry.options[CONF_UPCOMING_DAYS],
+        upcoming_days=entry.options[CONF_UPCOMING_DAYS],
     )
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
