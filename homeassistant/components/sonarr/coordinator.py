@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import logging
 
 from sonarr import Sonarr, SonarrAccessRestricted, SonarrError
+from sonarr.models import Application
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -17,7 +18,7 @@ SCAN_INTERVAL = timedelta(seconds=30)
 _LOGGER = logging.getLogger(__name__)
 
 
-class SonarrDataUpdateCoordinator(DataUpdateCoordinator[Device]):
+class SonarrDataUpdateCoordinator(DataUpdateCoordinator[Application]):
     """Class to manage fetching Sonarr data."""
 
     last_full_update: datetime | None
@@ -55,7 +56,7 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[Device]):
             update_interval=SCAN_INTERVAL,
         )
 
-    async def _async_update_data(self) -> Device:
+    async def _async_update_data(self) -> Application:
         """Fetch data from Sonarr."""
         full_update = self.last_full_update is None or utcnow() >= (
             self.last_full_update + self.full_update_interval
