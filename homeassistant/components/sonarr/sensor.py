@@ -242,6 +242,8 @@ class SonarrSeriesSensor(SonarrSensor):
         if self.coordinator.data.get("series") is not None:
             return len(self.coordinator.data["series"])
 
+        return None
+
 
 class SonarrUpcomingSensor(SonarrSensor):
     """Defines a Sonarr Upcoming sensor."""
