@@ -34,6 +34,8 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Sonarr from a config entry."""
+    hass.data.setdefault(DOMAIN, {})
+
     if not entry.options:
         options = {
             CONF_UPCOMING_DAYS: entry.data.get(
@@ -55,18 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         verify_ssl=entry.data[CONF_VERIFY_SSL],
     )
 
-    try:
-        await sonarr.update()
-    except SonarrAccessRestricted as err:
-        raise ConfigEntryAuthFailed(
-            "API Key is no longer valid. Please reauthenticate"
-        ) from err
-    except SonarrError as err:
-        raise ConfigEntryNotReady from err
-
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-
-    hass.data.setdefault(DOMAIN, {})
 
     coordinator = SonarrDataUpdateCoordinator(
         hass,
