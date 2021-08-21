@@ -14,7 +14,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 import homeassistant.util.dt as dt_util
 
-from .const import CONF_UPCOMING_DAYS, CONF_WANTED_MAX_ITEMS, DATA_SONARR, DOMAIN
+from .const import CONF_UPCOMING_DAYS, CONF_WANTED_MAX_ITEMS, DOMAIN
+from .coordinator import SonarrDataUpdateCoordinator
 from .entity import SonarrEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,16 +28,16 @@ async def async_setup_entry(
 ) -> None:
     """Set up Sonarr sensors based on a config entry."""
     options = entry.options
-    sonarr = hass.data[DOMAIN][entry.entry_id][DATA_SONARR]
+    coordinator: SonarrDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     entities = [
-        SonarrCommandsSensor(sonarr, entry.entry_id),
-        SonarrDiskspaceSensor(sonarr, entry.entry_id),
-        SonarrQueueSensor(sonarr, entry.entry_id),
-        SonarrSeriesSensor(sonarr, entry.entry_id),
-        SonarrUpcomingSensor(sonarr, entry.entry_id, days=options[CONF_UPCOMING_DAYS]),
+        SonarrCommandsSensor(coordinator, entry.entry_id),
+        SonarrDiskspaceSensor(coordinator, entry.entry_id),
+        SonarrQueueSensor(coordinator, entry.entry_id),
+        SonarrSeriesSensor(coordinator, entry.entry_id),
+        SonarrUpcomingSensor(coordinator, entry.entry_id, days=options[CONF_UPCOMING_DAYS]),
         SonarrWantedSensor(
-            sonarr, entry.entry_id, max_items=options[CONF_WANTED_MAX_ITEMS]
+            coordinator, entry.entry_id, max_items=options[CONF_WANTED_MAX_ITEMS]
         ),
     ]
 
@@ -72,7 +73,7 @@ class SonarrSensor(SonarrEntity, SensorEntity):
     def __init__(
         self,
         *,
-        sonarr: Sonarr,
+        coordinator: SonarrDataUpdateCoordinator,
         entry_id: str,
         enabled_default: bool = True,
         icon: str,
@@ -90,7 +91,7 @@ class SonarrSensor(SonarrEntity, SensorEntity):
         self.last_update_success = False
 
         super().__init__(
-            sonarr=sonarr,
+            coordinator=coordinator,
             entry_id=entry_id,
             device_id=entry_id,
         )
@@ -104,16 +105,16 @@ class SonarrSensor(SonarrEntity, SensorEntity):
 class SonarrCommandsSensor(SonarrSensor):
     """Defines a Sonarr Commands sensor."""
 
-    def __init__(self, sonarr: Sonarr, entry_id: str) -> None:
+    def __init__(self, coordinator: SonarrDataUpdateCoordinator, entry_id: str) -> None:
         """Initialize Sonarr Commands sensor."""
         self._commands = []
 
         super().__init__(
-            sonarr=sonarr,
+            coordinator=coordinator,
             entry_id=entry_id,
             icon="mdi:code-braces",
             key="commands",
-            name=f"{sonarr.app.info.app_name} Commands",
+            name=f"{coordinator.sonarr.app.info.app_name} Commands",
             unit_of_measurement="Commands",
             enabled_default=False,
         )
@@ -121,7 +122,7 @@ class SonarrCommandsSensor(SonarrSensor):
     @sonarr_exception_handler
     async def async_update(self) -> None:
         """Update entity."""
-        self._commands = await self.sonarr.commands()
+        self._commands = await self.coordinator.sonarr.commands()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
@@ -142,17 +143,17 @@ class SonarrCommandsSensor(SonarrSensor):
 class SonarrDiskspaceSensor(SonarrSensor):
     """Defines a Sonarr Disk Space sensor."""
 
-    def __init__(self, sonarr: Sonarr, entry_id: str) -> None:
+    def __init__(self, coordinator: SonarrDataUpdateCoordinator, entry_id: str) -> None:
         """Initialize Sonarr Disk Space sensor."""
         self._disks = []
         self._total_free = 0
 
         super().__init__(
-            sonarr=sonarr,
+            coordinator=coordinator,
             entry_id=entry_id,
             icon="mdi:harddisk",
             key="diskspace",
-            name=f"{sonarr.app.info.app_name} Disk Space",
+            name=f"{coordinator.sonarr.app.info.app_name} Disk Space",
             unit_of_measurement=DATA_GIGABYTES,
             enabled_default=False,
         )
@@ -160,7 +161,7 @@ class SonarrDiskspaceSensor(SonarrSensor):
     @sonarr_exception_handler
     async def async_update(self) -> None:
         """Update entity."""
-        app = await self.sonarr.update()
+        app = await self.coordinator.sonarr.update()
         self._disks = app.disks
         self._total_free = sum(disk.free for disk in self._disks)
 
@@ -190,16 +191,16 @@ class SonarrDiskspaceSensor(SonarrSensor):
 class SonarrQueueSensor(SonarrSensor):
     """Defines a Sonarr Queue sensor."""
 
-    def __init__(self, sonarr: Sonarr, entry_id: str) -> None:
+    def __init__(self, coordinator: SonarrDataUpdateCoordinator, entry_id: str) -> None:
         """Initialize Sonarr Queue sensor."""
         self._queue = []
 
         super().__init__(
-            sonarr=sonarr,
+            coordinator=coordinator,
             entry_id=entry_id,
             icon="mdi:download",
             key="queue",
-            name=f"{sonarr.app.info.app_name} Queue",
+            name=f"{coordinator.sonarr.app.info.app_name} Queue",
             unit_of_measurement="Episodes",
             enabled_default=False,
         )
@@ -207,7 +208,7 @@ class SonarrQueueSensor(SonarrSensor):
     @sonarr_exception_handler
     async def async_update(self) -> None:
         """Update entity."""
-        self._queue = await self.sonarr.queue()
+        self._queue = await self.coordinator.sonarr.queue()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
@@ -231,16 +232,16 @@ class SonarrQueueSensor(SonarrSensor):
 class SonarrSeriesSensor(SonarrSensor):
     """Defines a Sonarr Series sensor."""
 
-    def __init__(self, sonarr: Sonarr, entry_id: str) -> None:
+    def __init__(self, coordinator: SonarrDataUpdateCoordinator, entry_id: str) -> None:
         """Initialize Sonarr Series sensor."""
         self._items = []
 
         super().__init__(
-            sonarr=sonarr,
+            coordinator=coordinator,
             entry_id=entry_id,
             icon="mdi:television",
             key="series",
-            name=f"{sonarr.app.info.app_name} Shows",
+            name=f"{coordinator.sonarr.app.info.app_name} Shows",
             unit_of_measurement="Series",
             enabled_default=False,
         )
@@ -248,7 +249,7 @@ class SonarrSeriesSensor(SonarrSensor):
     @sonarr_exception_handler
     async def async_update(self) -> None:
         """Update entity."""
-        self._items = await self.sonarr.series()
+        self._items = await self.coordinator.sonarr.series()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
@@ -269,17 +270,17 @@ class SonarrSeriesSensor(SonarrSensor):
 class SonarrUpcomingSensor(SonarrSensor):
     """Defines a Sonarr Upcoming sensor."""
 
-    def __init__(self, sonarr: Sonarr, entry_id: str, days: int = 1) -> None:
+    def __init__(self, coordinator: SonarrDataUpdateCoordinator, entry_id: str, days: int = 1) -> None:
         """Initialize Sonarr Upcoming sensor."""
         self._days = days
         self._upcoming = []
 
         super().__init__(
-            sonarr=sonarr,
+            coordinator=coordinator,
             entry_id=entry_id,
             icon="mdi:television",
             key="upcoming",
-            name=f"{sonarr.app.info.app_name} Upcoming",
+            name=f"{coordinator.sonarr.app.info.app_name} Upcoming",
             unit_of_measurement="Episodes",
         )
 
@@ -289,7 +290,7 @@ class SonarrUpcomingSensor(SonarrSensor):
         local = dt_util.start_of_local_day().replace(microsecond=0)
         start = dt_util.as_utc(local)
         end = start + timedelta(days=self._days)
-        self._upcoming = await self.sonarr.calendar(
+        self._upcoming = await self.coordinator.sonarr.calendar(
             start=start.isoformat(), end=end.isoformat()
         )
 
@@ -312,18 +313,18 @@ class SonarrUpcomingSensor(SonarrSensor):
 class SonarrWantedSensor(SonarrSensor):
     """Defines a Sonarr Wanted sensor."""
 
-    def __init__(self, sonarr: Sonarr, entry_id: str, max_items: int = 10) -> None:
+    def __init__(self, coordinator: SonarrDataUpdateCoordinator, entry_id: str, max_items: int = 10) -> None:
         """Initialize Sonarr Wanted sensor."""
-        self._max_items = max_items
         self._results = None
+        self._max_items = max_items
         self._total: int | None = None
 
         super().__init__(
-            sonarr=sonarr,
+            coordinator=coordinator,
             entry_id=entry_id,
             icon="mdi:television",
             key="wanted",
-            name=f"{sonarr.app.info.app_name} Wanted",
+            name=f"{coordinator.sonarr.app.info.app_name} Wanted",
             unit_of_measurement="Episodes",
             enabled_default=False,
         )
@@ -331,7 +332,7 @@ class SonarrWantedSensor(SonarrSensor):
     @sonarr_exception_handler
     async def async_update(self) -> None:
         """Update entity."""
-        self._results = await self.sonarr.wanted(page_size=self._max_items)
+        self._results = await self.coordinator.sonarr.wanted(page_size=self._max_items)
         self._total = self._results.total
 
     @property
