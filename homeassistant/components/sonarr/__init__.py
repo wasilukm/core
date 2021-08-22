@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from sonarr import Sonarr, SonarrAccessRestricted, SonarrError
+from sonarr import Sonarr, SonarrError
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
