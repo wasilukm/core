@@ -752,6 +752,9 @@ getmac==0.8.2
 # homeassistant.components.gios
 gios==2.1.0
 
+# homeassistant.components.satel_integra
+git+https://github.com/wasilukm/satel_integra.git@add_encription_support
+
 # homeassistant.components.gitter
 gitterpy==0.1.7
 
@@ -2196,9 +2199,6 @@ samsungctl[websocket]==0.7.1
 
 # homeassistant.components.samsungtv
 samsungtvws[async,encrypted]==2.5.0
-
-# homeassistant.components.satel_integra
-satel_integra==0.3.7
 
 # homeassistant.components.dhcp
 scapy==2.4.5
