@@ -1,6 +1,7 @@
 """Coordinator for Sonarr."""
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
 
@@ -63,7 +64,7 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
     def disable_datapoint(self, datapoint: str) -> None:
         """Disable collection of a datapoint from its respective endpoint."""
         self.datapoints.remove(datapoint)
-        
+
     async def get_datapoint(self, datapoint: str):
         """Fetch datapoint from its respective endpoint."""
         if datapoint == "commands":
@@ -87,7 +88,7 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
 
     async def _async_update_data(self) -> dict:
         """Fetch data from Sonarr."""
-        try: 
+        try:
             await self.sonarr.update()
 
             data = dict(
