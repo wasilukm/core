@@ -58,7 +58,7 @@ class SonarrDataUpdateCoordinator(DataUpdateCoordinator[dict]):
 
     def enable_datapoint(self, datapoint: str) -> None:
         """Enable collection of a datapoint from its respective endpoint."""
-        self.datapoints.push(datapoint)
+        self.datapoints.append(datapoint)
 
     def disable_datapoint(self, datapoint: str) -> None:
         """Disable collection of a datapoint from its respective endpoint."""
