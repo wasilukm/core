@@ -1,20 +1,16 @@
 """Support for Sonarr sensors."""
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
 from typing import Any
-
-from sonarr import Sonarr, SonarrConnectionError, SonarrError
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import DATA_GIGABYTES
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-import homeassistant.util.dt as dt_util
 
-from .const import CONF_UPCOMING_DAYS, CONF_WANTED_MAX_ITEMS, DOMAIN
+from .const import DOMAIN
 from .coordinator import SonarrDataUpdateCoordinator
 from .entity import SonarrEntity
 
