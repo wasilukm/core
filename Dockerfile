@@ -11,7 +11,7 @@ WORKDIR /usr/src
 COPY requirements.txt homeassistant/
 COPY homeassistant/package_constraints.txt homeassistant/homeassistant/
 RUN \
-    pip3 install --no-cache-dir --no-index pip>=21.0,<22.1
+    pip3 install --no-cache-dir --no-index "pip>=21.0,<22.1"
 
 RUN \
     pip3 install --no-cache-dir --no-index --only-binary=:all: --find-links "${WHEELS_LINKS}" \
