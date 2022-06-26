@@ -11,9 +11,6 @@ WORKDIR /usr/src
 COPY requirements.txt homeassistant/
 COPY homeassistant/package_constraints.txt homeassistant/homeassistant/
 RUN \
-    pip3 install --no-cache-dir -U "pip>=21.0,<22.1"
-
-RUN \
     pip3 install --no-cache-dir --no-index --only-binary=:all: --find-links "${WHEELS_LINKS}" \
     -r homeassistant/requirements.txt --use-deprecated=legacy-resolver
 COPY requirements_all.txt homeassistant/
