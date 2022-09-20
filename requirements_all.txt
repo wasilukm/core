@@ -753,7 +753,7 @@ getmac==0.8.2
 gios==2.1.0
 
 # homeassistant.components.satel_integra
-git+https://github.com/wasilukm/satel_integra.git@py310
+git+https://github.com/wasilukm/satel_integra.git@encr/new
 
 # homeassistant.components.gitter
 gitterpy==0.1.7
